@@ -27,10 +27,7 @@ server.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const baseUrl = process.env.API_URL || "http://localhost:3000";
-    console.log(`Tentando acessar ${baseUrl}/users`); 
-
-    const response = await axios.get(`${baseUrl}/users`);
+    const response = await axios.get("http://localhost:3000/users");
     const users = response.data;
 
     const user = users.find(
@@ -44,7 +41,7 @@ server.post("/auth/login", async (req, res) => {
     const token = createToken({ email: user.email, id: user.id });
     res.json({ token });
   } catch (error) {
-    console.error("Erro no login:", error); // Log detalhado do erro
+    console.error(error);
     res.status(500).json({ error: "Erro ao acessar os usuários!" });
   }
 });
@@ -111,7 +108,9 @@ server.post("/restaurants", (req, res) => {
     };
 
     console.log("Novo restaurante a ser salvo:", newRestaurant);
+
     db.get("restaurants").push(newRestaurant).write();
+
     console.log("Restaurante salvo com sucesso!");
 
     res.status(200).json({ message: "Restaurante criado com sucesso!" });
@@ -150,9 +149,6 @@ server.use((req, res, next) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+server.listen(3000, () => {
+  console.log("Servidor rodando na porta 3000");
 });
-
-module.exports = server;
