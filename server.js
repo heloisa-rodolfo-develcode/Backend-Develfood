@@ -9,26 +9,19 @@ const router = jsonServer.router("db.json");
 const middlewares = jsonServer.defaults();
 
 // 🔹 Definir a URL base da API dinamicamente
-const API_URL = process.env.VITE_API_URL || process.env.VERCEL_URL 
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+const API_URL = process.env.VITE_API_URL || process.env.VERCEL_URL || "http://localhost:3000";
 
 // 🔹 Configuração do CORS (Coloque antes de qualquer rota)
 server.use(cors({
   origin: "https://frontend-develfood.vercel.app", // Seu frontend
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
   optionsSuccessStatus: 204
 }));
 
 // 🔹 Middleware para pré-voo CORS (preflight)
-server.options("*", (req, res) => {
-  res.header("Access-Control-Allow-Origin", "https://frontend-develfood.vercel.app");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.sendStatus(204);
-});
+server.options("*", cors());
 
 server.use(bodyParser.json());
 server.use(middlewares);
@@ -66,10 +59,17 @@ server.post("/auth/login", async (req, res) => {
 
 // 🔹 Middleware para proteger rotas que não são GET
 server.use((req, res, next) => {
-  if (req.method === "GET") {
+  // Permitir requisições OPTIONS (pré-voo CORS)
+  if (req.method === "OPTIONS") {
     return next();
   }
 
+  // Permitir requisições GET e POST para /restaurants sem autenticação
+  if (req.method === "GET" || (req.path === "/restaurants" && req.method === "POST")) {
+    return next();
+  }
+
+  // Verificar token para outras rotas
   if (!req.headers.authorization) {
     return res.status(403).json({ error: "Token não fornecido" });
   }
