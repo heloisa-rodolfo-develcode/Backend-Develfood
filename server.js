@@ -10,10 +10,13 @@ const middlewares = jsonServer.defaults();
 
 // Configuração do CORS
 server.use(cors({
-  origin: 'https://frontend-develfood.vercel.app', // Permite apenas requisições deste domínio
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
-  allowedHeaders: ['Content-Type', 'Authorization'] // Headers permitidos
+  origin: 'https://frontend-develfood.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  preflightContinue: true, // Continue preflight request
+  optionsSuccessStatus: 200, // Pode evitar problemas com alguns navegadores
 }));
+
 
 server.use(bodyParser.json());
 server.use(middlewares);
