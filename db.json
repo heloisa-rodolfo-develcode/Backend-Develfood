@@ -1,0 +1,53 @@
+{
+    "users": [
+      {
+        "id": 1,
+        "email": "heloisarodolfo@gmail.com",
+        "password": "12345678"
+      },
+      {
+        "id": 2,
+        "email": "user@example.com",
+        "password": "User123!"
+      }
+    ],
+    "restaurants": [
+      {
+        "cnpj": "12345678901234",
+        "name": "Restaurante Teste",
+        "phone": "11999999999",
+        "email": "teste@restaurante.com",
+        "password": "senha123",
+        "foodTypes": [
+          "Pizza",
+          "Hambúrguer"
+        ],
+        "nickname": "Restaurante Teste",
+        "zipcode": "12345678",
+        "street": "Rua Teste",
+        "neighborhood": "Bairro Teste",
+        "city": "São Paulo",
+        "state": "SP",
+        "number": "123"
+      },
+      {
+        "id": 2,
+        "cnpj": "32.545.657/6776-57",
+        "name": "Heloisa Rodolfo",
+        "phone": "(48) 98490-8088",
+        "email": "heloisarodolfo@gmail.com",
+        "password": "Devel123*",
+        "foodTypes": [
+          "brasileira",
+          "mexicana"
+        ],
+        "nickname": "Ifood",
+        "zipcode": "88065-165",
+        "street": "Rua Olavo Juvenal Ramos",
+        "neighborhood": "Campeche",
+        "city": "Florianópolis",
+        "state": "SC",
+        "number": "435"
+      }
+    ]
+  }
