@@ -8,22 +8,26 @@ const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 const middlewares = jsonServer.defaults();
 
-// Configuração do CORS
+// 🔹 Definir a URL base da API dinamicamente
+const API_URL = process.env.VITE_API_URL || process.env.VERCEL_URL 
+  ? `https://${process.env.VERCEL_URL}`
+  : "http://localhost:3000";
+
+// 🔹 Configuração do CORS (Coloque antes de qualquer rota)
 server.use(cors({
-  origin: 'https://frontend-develfood.vercel.app', // Permite apenas requisições deste domínio
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Adicione 'OPTIONS' aqui
-  allowedHeaders: ['Content-Type', 'Authorization'], // Headers permitidos
+  origin: "https://frontend-develfood.vercel.app", // Seu frontend
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
-  preflightContinue: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 204
 }));
 
-// Middleware para lidar com requisições OPTIONS
-server.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'https://frontend-develfood.vercel.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.sendStatus(204); // Resposta sem conteúdo para o preflight
+// 🔹 Middleware para pré-voo CORS (preflight)
+server.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "https://frontend-develfood.vercel.app");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.sendStatus(204);
 });
 
 server.use(bodyParser.json());
@@ -36,17 +40,12 @@ function createToken(payload) {
   return jwt.sign(payload, SECRET_KEY, { expiresIn });
 }
 
-server.get("/users", (req, res) => {
-  const db = router.db;
-  const users = db.get("users").value();
-  res.json(users);
-});
-
+// 🔹 Ajustar o login para usar a API correta
 server.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const response = await axios.get("http://localhost:3000/users");
+    const response = await axios.get(`${API_URL}/users`);
     const users = response.data;
 
     const user = users.find(
@@ -60,97 +59,14 @@ server.post("/auth/login", async (req, res) => {
     const token = createToken({ email: user.email, id: user.id });
     res.json({ token });
   } catch (error) {
-    console.error(error);
+    console.error("Erro ao acessar os usuários:", error);
     res.status(500).json({ error: "Erro ao acessar os usuários!" });
   }
 });
 
-server.post("/restaurants", (req, res) => {
-  const {
-    cnpj,
-    name,
-    phone,
-    email,
-    password,
-    foodTypes,
-    nickname,
-    zipcode,
-    street,
-    neighborhood,
-    city,
-    state,
-    number,
-  } = req.body;
-
-  if (
-    !cnpj ||
-    !name ||
-    !phone ||
-    !email ||
-    !password ||
-    !foodTypes ||
-    !nickname ||
-    !zipcode ||
-    !street ||
-    !neighborhood ||
-    !city ||
-    !state ||
-    !number
-  ) {
-    return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
-  }
-
-  try {
-    const db = router.db;
-    const restaurants = db.get("restaurants").value();
-
-    const existingRestaurant = restaurants.find((r) => r.cnpj === cnpj);
-    if (existingRestaurant) {
-      return res.status(401).json({ error: "CNPJ já cadastrado!" });
-    }
-
-    const newRestaurant = {
-      id: restaurants.length + 1,
-      cnpj,
-      name,
-      phone,
-      email,
-      password,
-      foodTypes,
-      nickname,
-      zipcode,
-      street,
-      neighborhood,
-      city,
-      state,
-      number,
-    };
-
-    console.log("Novo restaurante a ser salvo:", newRestaurant);
-
-    db.get("restaurants").push(newRestaurant).write();
-
-    console.log("Restaurante salvo com sucesso!");
-
-    res.status(200).json({ message: "Restaurante criado com sucesso!" });
-  } catch (error) {
-    console.error("Erro ao criar restaurante:", error);
-    res.status(500).json({ error: "Erro ao criar restaurante!" });
-  }
-});
-
-server.get("/restaurants", (req, res) => {
-  const db = router.db;
-  const restaurants = db.get("restaurants").value();
-  res.json(restaurants);
-});
-
+// 🔹 Middleware para proteger rotas que não são GET
 server.use((req, res, next) => {
   if (req.method === "GET") {
-    return next();
-  }
-
-  if (req.path === "/restaurants" && req.method === "POST") {
     return next();
   }
 
@@ -168,6 +84,7 @@ server.use((req, res, next) => {
   }
 });
 
-server.listen(3000, () => {
-  console.log("Servidor rodando na porta 3000");
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
