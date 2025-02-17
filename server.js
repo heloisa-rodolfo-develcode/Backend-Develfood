@@ -12,7 +12,10 @@ const middlewares = jsonServer.defaults();
 server.use(cors({
   origin: 'https://frontend-develfood.vercel.app', // Permite apenas requisições deste domínio
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Adicione 'OPTIONS' aqui
-  allowedHeaders: ['Content-Type', 'Authorization'] // Headers permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'], // Headers permitidos
+  credentials: true,
+  preflightContinue: true,
+  optionsSuccessStatus: 200
 }));
 
 // Middleware para lidar com requisições OPTIONS
