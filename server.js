@@ -28,6 +28,7 @@ server.post("/auth/login", async (req, res) => {
 
   try {
     const baseUrl = process.env.API_URL || "http://localhost:3000";
+    console.log(`Tentando acessar ${baseUrl}/users`); 
 
     const response = await axios.get(`${baseUrl}/users`);
     const users = response.data;
@@ -43,7 +44,7 @@ server.post("/auth/login", async (req, res) => {
     const token = createToken({ email: user.email, id: user.id });
     res.json({ token });
   } catch (error) {
-    console.error(error);
+    console.error("Erro no login:", error); // Log detalhado do erro
     res.status(500).json({ error: "Erro ao acessar os usuários!" });
   }
 });
