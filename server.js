@@ -2,10 +2,18 @@ import jsonServer from "json-server";
 import jwt from "jsonwebtoken";
 import bodyParser from "body-parser";
 import axios from "axios";
+import cors from "cors";
 
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 const middlewares = jsonServer.defaults();
+
+// Configuração do CORS
+server.use(cors({
+  origin: 'https://frontend-develfood.vercel.app', // Permite apenas requisições deste domínio
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'] // Headers permitidos
+}));
 
 server.use(bodyParser.json());
 server.use(middlewares);
