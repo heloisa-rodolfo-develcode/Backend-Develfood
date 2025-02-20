@@ -13,10 +13,10 @@ const API_URL = process.env.VITE_API_URL || process.env.VERCEL_URL || "http://lo
 
 // 🔹 Configuração do CORS (Coloque antes de qualquer rota)
 server.use(cors({
-  origin: "https://frontend-develfood.vercel.app", // Seu frontend
+  origin: "*", // Seu frontend
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
+//  credentials: true,
   optionsSuccessStatus: 204
 }));
 
