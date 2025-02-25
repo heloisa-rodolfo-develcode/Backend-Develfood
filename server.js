@@ -4,27 +4,21 @@ import bodyParser from "body-parser";
 import axios from "axios";
 import cors from "cors";
 
+
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 const middlewares = jsonServer.defaults();
 
-// 🔹 Definir a URL base da API dinamicamente
-const API_URL = process.env.VITE_API_URL || process.env.VERCEL_URL || "http://localhost:3000";
-
-// 🔹 Configuração do CORS (Coloque antes de qualquer rota)
+server.use(bodyParser.json({limit: "10mb"}));
+server.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
+server.use(middlewares);
 server.use(cors({
-  origin: "https://frontend-develfood.vercel.app", // Seu frontend
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-  optionsSuccessStatus: 204
+  origin: ['http://localhost:5174', 'https://frontend-develfood.vercel.app'], 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+  allowedHeaders: ['Content-Type', 'Authorization'], 
 }));
 
-// 🔹 Middleware para pré-voo CORS (preflight)
-server.options("*", cors());
-
-server.use(bodyParser.json());
-server.use(middlewares);
+server.options('*', cors());
 
 const SECRET_KEY = "auth_token";
 const expiresIn = "1h";
@@ -33,12 +27,17 @@ function createToken(payload) {
   return jwt.sign(payload, SECRET_KEY, { expiresIn });
 }
 
-// 🔹 Ajustar o login para usar a API correta
+server.get("/users", (req, res) => {
+  const db = router.db;
+  const users = db.get("users").value();
+  res.json(users);
+});
+
 server.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const response = await axios.get(`${API_URL}/users`);
+    const response = await axios.get("http://localhost:3001/users");
     const users = response.data;
 
     const user = users.find(
@@ -52,24 +51,111 @@ server.post("/auth/login", async (req, res) => {
     const token = createToken({ email: user.email, id: user.id });
     res.json({ token });
   } catch (error) {
-    console.error("Erro ao acessar os usuários:", error);
+    console.error(error);
     res.status(500).json({ error: "Erro ao acessar os usuários!" });
   }
 });
 
-// 🔹 Middleware para proteger rotas que não são GET
+server.post("/restaurants", (req, res) => {
+  const {
+    cnpj,
+    name,
+    phone,
+    email,
+    password,
+    foodTypes,
+    nickname,
+    zipcode,
+    street,
+    neighborhood,
+    city,
+    state,
+    number,
+  } = req.body;
+
+  if (
+    !cnpj ||
+    !name ||
+    !phone ||
+    !email ||
+    !password ||
+    !foodTypes ||
+    !nickname ||
+    !zipcode ||
+    !street ||
+    !neighborhood ||
+    !city ||
+    !state ||
+    !number
+  ) {
+    return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
+  }
+
+  try {
+    const db = router.db;
+    const restaurants = db.get("restaurants").value();
+
+    const existingRestaurant = restaurants.find((r) => r.cnpj === cnpj);
+    if (existingRestaurant) {
+      return res.status(401).json({ error: "CNPJ já cadastrado!" });
+    }
+
+    const newRestaurant = {
+      id: restaurants.length + 1,
+      cnpj,
+      name,
+      phone,
+      email,
+      password,
+      foodTypes,
+      nickname,
+      zipcode,
+      street,
+      neighborhood,
+      city,
+      state,
+      number,
+    };
+
+    console.log("Novo restaurante a ser salvo:", newRestaurant);
+
+    db.get("restaurants").push(newRestaurant).write();
+
+    console.log("Restaurante salvo com sucesso!");
+
+    res.status(200).json({ message: "Restaurante criado com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao criar restaurante:", error);
+    res.status(500).json({ error: "Erro ao criar restaurante!" });
+  }
+});
+
+server.get("/restaurants", (req, res) => {
+  const db = router.db;
+  const restaurants = db.get("restaurants").value();
+  res.json(restaurants);
+});
+
 server.use((req, res, next) => {
-  // Permitir requisições OPTIONS (pré-voo CORS)
-  if (req.method === "OPTIONS") {
+  if (req.method === "GET") {
     return next();
   }
 
-  // Permitir requisições GET e POST para /restaurants sem autenticação
-  if (req.method === "GET" || (req.path === "/restaurants" && req.method === "POST")) {
+  if (
+    (req.path === "/restaurants" && req.method === "POST") ||
+    (req.path === "/products" && req.method === "POST")
+  ) {
     return next();
   }
 
-  // Verificar token para outras rotas
+  if (req.path.startsWith("/products/") && req.method === "PUT") {
+    return next();
+  }
+
+  if (req.path.startsWith("/products/") && req.method === "DELETE") {
+    return next();
+  }
+
   if (!req.headers.authorization) {
     return res.status(403).json({ error: "Token não fornecido" });
   }
@@ -84,7 +170,107 @@ server.use((req, res, next) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+server.post("/products", (req, res) => {
+  const { name, image, description, price, foodTypes } = req.body;
+
+  if (!name || !description || !price || !foodTypes) {
+    return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
+  }
+
+  try {
+    const db = router.db;
+    const products = db.get("products").value();
+
+    const newProduct = {
+      id: products.length + 1,
+      name,
+      image: image || null,
+      description,
+      price,
+      foodTypes,
+    };
+
+    db.get("products").push(newProduct).write();
+
+    res.status(200).json({ message: "Produto criado com sucesso!", product: newProduct });
+  } catch (error) {
+    console.error("Erro ao criar produto:", error);
+    res.status(500).json({ error: "Erro ao criar produto!" });
+  }
+});
+
+server.get("/products", (req, res) => {
+  const db = router.db;
+  const products = db.get("products").value();
+  res.json(products);
+});
+
+server.get("/products/:id", (req, res) => {
+  const db = router.db;
+  const productId = parseInt(req.params.id, 10);
+  const product = db.get("products").find({ id: productId }).value();
+
+  if (product) {
+    res.json(product);
+  } else {
+    res.status(404).json({ error: "Produto não encontrado" });
+  }
+});
+
+server.put("/products/:id", (req, res) => {
+  const productId = parseInt(req.params.id, 10);
+  const { name, image, description, price, foodTypes } = req.body;
+
+  if (!name || !description || !price || !foodTypes) {
+    return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
+  }
+
+  try {
+    const db = router.db;
+    const product = db.get("products").find({ id: productId }).value();
+
+    if (!product) {
+      return res.status(404).json({ error: "Produto não encontrado" });
+    }
+
+    const updatedProduct = {
+      ...product,
+      name,
+      image: image || product.image,
+      description,
+      price,
+      foodTypes,
+    };
+
+    db.get("products").find({ id: productId }).assign(updatedProduct).write();
+
+    res.status(200).json({ message: "Produto atualizado com sucesso!", product: updatedProduct });
+  } catch (error) {
+    console.error("Erro ao atualizar produto:", error);
+    res.status(500).json({ error: "Erro ao atualizar produto!" });
+  }
+});
+
+server.delete("/products/:id", (req, res) => {
+  const productId = parseInt(req.params.id, 10);
+
+  try {
+    const db = router.db;
+    const product = db.get("products").find({ id: productId }).value();
+
+    if (!product) {
+      return res.status(404).json({ error: "Produto não encontrado" });
+    }
+
+    db.get("products").remove({ id: productId }).write();
+
+    res.status(200).json({ message: "Produto excluído com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao excluir produto:", error);
+    res.status(500).json({ error: "Erro ao excluir produto!" });
+  }
+});
+
+server.listen(3001, () => {
+  console.log("Servidor rodando na porta 3001");
 });
