@@ -13,7 +13,7 @@ server.use(bodyParser.json({limit: "10mb"}));
 server.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 server.use(middlewares);
 server.use(cors({
-  origin: ['http://localhost:5174', 'https://frontend-develfood.vercel.app'], 
+  origin: ['https://frontend-develfood.vercel.app'], 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
   allowedHeaders: ['Content-Type', 'Authorization'], 
 }));
