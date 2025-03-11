@@ -382,3 +382,5 @@ server.get("/orders", (req, res) => {
   const orders = db.get("orders").value();
   res.json(orders);
 });
+
+export default server;
