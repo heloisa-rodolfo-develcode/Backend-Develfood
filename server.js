@@ -37,7 +37,7 @@ server.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const response = await axios.get("http://localhost:3001/users");
+    const response = await axios.get("http://localhost:3000/users");
     const users = response.data;
 
     const user = users.find(
@@ -141,18 +141,23 @@ server.use((req, res, next) => {
     return next();
   }
 
+  // Permite requisições PATCH para /orders/:id sem autenticação
+  if (req.path.startsWith("/orders/") && req.method === "PATCH") {
+    return next();
+  }
+
   if (
     (req.path === "/restaurants" && req.method === "POST") ||
-    (req.path === "/products" && req.method === "POST")
+    (req.path === "/products" && req.method === "POST") ||
+    (req.path === "/promotions" && req.method === "POST") // ou "/promotions"
   ) {
     return next();
   }
 
-  if (req.path.startsWith("/products/") && req.method === "PUT") {
-    return next();
-  }
-
-  if (req.path.startsWith("/products/") && req.method === "DELETE") {
+  if (
+    (req.path.startsWith("/products/") && (req.method === "PUT" || req.method === "DELETE")) ||
+    (req.path.startsWith("/promotions/") && (req.method === "PUT" || req.method === "DELETE"))
+  ) {
     return next();
   }
 
@@ -169,9 +174,8 @@ server.use((req, res, next) => {
     res.status(401).json({ error: "Token inválido ou expirado" });
   }
 });
-
 server.post("/products", (req, res) => {
-  const { name, image, description, price, foodTypes } = req.body;
+  const { name, image, description, price, foodTypes, available } = req.body; 
 
   if (!name || !description || !price || !foodTypes) {
     return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
@@ -188,6 +192,7 @@ server.post("/products", (req, res) => {
       description,
       price,
       foodTypes,
+      available, 
     };
 
     db.get("products").push(newProduct).write();
@@ -198,7 +203,6 @@ server.post("/products", (req, res) => {
     res.status(500).json({ error: "Erro ao criar produto!" });
   }
 });
-
 server.get("/products", (req, res) => {
   const db = router.db;
   const products = db.get("products").value();
@@ -219,7 +223,7 @@ server.get("/products/:id", (req, res) => {
 
 server.put("/products/:id", (req, res) => {
   const productId = parseInt(req.params.id, 10);
-  const { name, image, description, price, foodTypes } = req.body;
+  const { name, image, description, price, foodTypes, available } = req.body; 
 
   if (!name || !description || !price || !foodTypes) {
     return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
@@ -240,6 +244,7 @@ server.put("/products/:id", (req, res) => {
       description,
       price,
       foodTypes,
+      available, 
     };
 
     db.get("products").find({ id: productId }).assign(updatedProduct).write();
@@ -271,6 +276,113 @@ server.delete("/products/:id", (req, res) => {
   }
 });
 
-server.listen(3001, () => {
-  console.log("Servidor rodando na porta 3001");
+server.post("/promotions", (req, res) => {
+  const { name, image, percentage, start, end } = req.body;
+
+  if (!name || !percentage || !start || !end) {
+    return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
+  }
+
+  try {
+    const db = router.db;
+    const promotions = db.get("promotions").value();
+
+    const newPromotion = {
+      id: promotions.length + 1,
+      name,
+      image: image || null,
+      percentage,
+      start,
+      end,
+    };
+
+    db.get("promotions").push(newPromotion).write();
+
+    res.status(200).json({ message: "Promoção criada com sucesso!", promotion: newPromotion });
+  } catch (error) {
+    console.error("Erro ao criar promoção:", error);
+    res.status(500).json({ error: "Erro ao criar promoção!" });
+  }
+});
+
+server.get("/promotions", (req, res) => {
+  const db = router.db;
+  const promotions = db.get("promotions").value();
+  res.json(promotions);
+});
+
+server.get("/promotions/:id", (req, res) => {
+  const db = router.db;
+  const promotionId = parseInt(req.params.id, 10);
+  const promotion = db.get("promotions").find({ id: promotionId }).value();
+
+  if (promotion) {
+    res.json(promotion);
+  } else {
+    res.status(404).json({ error: "Promoção não encontrada" });
+  }
+});
+
+server.put("/promotions/:id", (req, res) => {
+  const promotionId = parseInt(req.params.id, 10);
+  const { name, image, percentage, start, end } = req.body;
+
+  if (!name || !percentage || !start || !end) {
+    return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
+  }
+
+  try {
+    const db = router.db;
+    const promotion = db.get("promotions").find({ id: promotionId }).value();
+
+    if (!promotion) {
+      return res.status(404).json({ error: "Promoção não encontrada" });
+    }
+
+    const updatedPromotion = {
+      ...promotion,
+      name,
+      image: image || promotion.image,
+      percentage,
+      start,
+      end,
+    };
+
+    db.get("promotions").find({ id: promotionId }).assign(updatedPromotion).write();
+
+    res.status(200).json({ message: "Promoção atualizada com sucesso!", promotion: updatedPromotion });
+  } catch (error) {
+    console.error("Erro ao atualizar promoção:", error);
+    res.status(500).json({ error: "Erro ao atualizar promoção!" });
+  }
+});
+
+server.delete("/promotions/:id", (req, res) => {
+  const promotionId = parseInt(req.params.id, 10);
+
+  try {
+    const db = router.db;
+    const promotion = db.get("promotions").find({ id: promotionId }).value();
+
+    if (!promotion) {
+      return res.status(404).json({ error: "Promoção não encontrada" });
+    }
+
+    db.get("promotions").remove({ id: promotionId }).write();
+
+    res.status(200).json({ message: "Promoção excluída com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao excluir promoção:", error);
+    res.status(500).json({ error: "Erro ao excluir promoção!" });
+  }
+});
+
+server.get("/orders", (req, res) => {
+  const db = router.db;
+  const orders = db.get("orders").value();
+  res.json(orders);
+});
+
+server.listen(3000, () => {
+  console.log("Servidor rodando na porta 3000");
 });
