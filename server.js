@@ -383,4 +383,7 @@ server.get("/orders", (req, res) => {
   res.json(orders);
 });
 
-export default server;
+const PORT = process.env.PORT || 3000; // Usa a porta do Vercel ou 3000 localmente
+server.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
