@@ -383,16 +383,14 @@ server.get("/orders", (req, res) => {
   res.json(orders);
 });
 
-const PORT = process.env.PORT || 3000; // Usa a porta do Vercel ou 3000 localmente
+const PORT = process.env.PORT || 3000; 
 
-// Exporte uma função que inicia o servidor
 export const startServer = () => {
   server.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
   });
 };
 
-// Inicie o servidor apenas se não estiver no ambiente do Vercel
-if (process.env.NODE_ENV !== "production") {
-  startServer();
-}
+
+
+export default server;
