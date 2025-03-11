@@ -61,5 +61,58 @@
           "bebidas"
         ]
       }
-    ]
+    ],
+    "promotions": [
+
+    ],
+    "orders": [
+    {
+      "id": 1,
+      "orderName": "Pizza Margherita",
+      "date": "11/03/2024",
+      "payment": "PIX",
+      "status": "Entregue",
+      "comment": "Sem cebola"
+    },
+    {
+      "id": 2,
+      "orderName": "Hambúrguer Artesanal",
+      "date": "11/03/2024",
+      "payment": "App",
+      "status": "Esperando Aceitação",
+      "comment": "Bem passado"
+    },
+    {
+      "id": 3,
+      "orderName": "Sushi Variado",
+      "date": "11/03/2024",
+      "payment": "Débito",
+      "status": "Esperando Aceitação",
+      "comment": "Com molho shoyu extra"
+    },
+    {
+      "id": 4,
+      "orderName": "Lasanha de Frango",
+      "date": "11/03/2024",
+      "payment": "PIX",
+      "status": "Entregue",
+      "comment": "Sem queijo"
+    },
+    {
+      "id": 5,
+      "orderName": "Salada Caesar",
+      "date": "11/03/2024",
+      "payment": "App",
+      "status": "Em Rota",
+      "comment": "Sem croutons"
+    },
+    {
+      "id": 6,
+      "orderName": "Sorvete de Chocolate",
+      "date": "11/03/2024",
+      "payment": "Débito",
+      "status": "Em Rota",
+      "comment": "Com calda de caramelo"
+    }
+  ]
   }
