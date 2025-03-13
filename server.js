@@ -4,7 +4,6 @@ import bodyParser from "body-parser";
 import axios from "axios";
 import cors from "cors";
 
-
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 const middlewares = jsonServer.defaults();
@@ -19,6 +18,70 @@ server.use(cors({
 }));
 
 server.options('*', cors());
+
+server.put("/restaurants/:cnpj", (req, res) => {
+  const { cnpj } = req.params; 
+  
+  const {
+    name,
+    phone,
+    email,
+    foodTypes,
+    nickname,
+    zipcode,
+    street,
+    neighborhood,
+    city,
+    state,
+    number,
+  } = req.body;
+  if (
+    !name ||
+    !phone ||
+    !email ||
+    !foodTypes ||
+    !nickname ||
+    !zipcode ||
+    !street ||
+    !neighborhood ||
+    !city ||
+    !state ||
+    !number
+  ) {
+    return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
+  }
+  try {
+    const db = router.db;
+    const restaurant = db.get("restaurants").find({ cnpj }).value();
+
+    if (!restaurant) {
+      return res.status(404).json({ error: "Restaurante não encontrado" });
+    }
+    const updatedRestaurant = {
+      ...restaurant,
+      cnpj,
+      name,
+      phone,
+      email,
+      foodTypes,
+      nickname,
+      zipcode,
+      street,
+      neighborhood,
+      city,
+      state,
+      number,
+    };
+    db.get("restaurants").find({ cnpj }).assign(updatedRestaurant).write();
+    res.status(200).json({ message: "Restaurante atualizado com sucesso!", restaurant: updatedRestaurant });
+  } catch (error) {
+    console.error("Erro ao atualizar restaurante:", error);
+    res.status(500).json({ error: "Erro ao atualizar restaurante!" });
+  }
+});
+
+
+server.use(router);
 
 const SECRET_KEY = "auth_token";
 const expiresIn = "1h";
@@ -77,8 +140,8 @@ server.post("/restaurants", (req, res) => {
     !cnpj ||
     !name ||
     !phone ||
+    !passowrd ||
     !email ||
-    !password ||
     !foodTypes ||
     !nickname ||
     !zipcode ||
@@ -130,18 +193,26 @@ server.post("/restaurants", (req, res) => {
   }
 });
 
+
 server.get("/restaurants", (req, res) => {
+  const restaurantId = parseInt(req.params.id, 10);
   const db = router.db;
-  const restaurants = db.get("restaurants").value();
-  res.json(restaurants);
+  const restaurant = db.get("restaurants").value();
+
+  if (restaurant) {
+    res.json(restaurant);
+  } else {
+    res.status(404).json({ error: "Restaurante não encontrado" });
+  }
 });
 
+
+// Middleware de autenticação
 server.use((req, res, next) => {
   if (req.method === "GET") {
     return next();
   }
 
-  // Permite requisições PATCH para /orders/:id sem autenticação
   if (req.path.startsWith("/orders/") && req.method === "PATCH") {
     return next();
   }
@@ -149,7 +220,7 @@ server.use((req, res, next) => {
   if (
     (req.path === "/restaurants" && req.method === "POST") ||
     (req.path === "/products" && req.method === "POST") ||
-    (req.path === "/promotions" && req.method === "POST") // ou "/promotions"
+    (req.path === "/promotions" && req.method === "POST") 
   ) {
     return next();
   }
@@ -174,8 +245,9 @@ server.use((req, res, next) => {
     res.status(401).json({ error: "Token inválido ou expirado" });
   }
 });
+
 server.post("/products", (req, res) => {
-  const { name, image, description, price, foodTypes, available } = req.body; 
+  const { name, image, description, price, foodTypes, available } = req.body;
 
   if (!name || !description || !price || !foodTypes) {
     return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
@@ -192,7 +264,7 @@ server.post("/products", (req, res) => {
       description,
       price,
       foodTypes,
-      available, 
+      available,
     };
 
     db.get("products").push(newProduct).write();
@@ -203,6 +275,7 @@ server.post("/products", (req, res) => {
     res.status(500).json({ error: "Erro ao criar produto!" });
   }
 });
+
 server.get("/products", (req, res) => {
   const db = router.db;
   const products = db.get("products").value();
@@ -223,7 +296,7 @@ server.get("/products/:id", (req, res) => {
 
 server.put("/products/:id", (req, res) => {
   const productId = parseInt(req.params.id, 10);
-  const { name, image, description, price, foodTypes, available } = req.body; 
+  const { name, image, description, price, foodTypes, available } = req.body;
 
   if (!name || !description || !price || !foodTypes) {
     return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
@@ -244,7 +317,7 @@ server.put("/products/:id", (req, res) => {
       description,
       price,
       foodTypes,
-      available, 
+      available,
     };
 
     db.get("products").find({ id: productId }).assign(updatedProduct).write();
@@ -382,6 +455,37 @@ server.get("/orders", (req, res) => {
   const orders = db.get("orders").value();
   res.json(orders);
 });
+
+server.patch("/orders/:id", (req, res) => {
+  const orderId = parseInt(req.params.id, 10);
+  const { status } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ error: "O campo 'status' é obrigatório!" });
+  }
+
+  try {
+    const db = router.db;
+    const order = db.get("orders").find({ id: orderId }).value();
+
+    if (!order) {
+      return res.status(404).json({ error: "Pedido não encontrado" });
+    }
+
+    const updatedOrder = {
+      ...order,
+      status,
+    };
+
+    db.get("orders").find({ id: orderId }).assign(updatedOrder).write();
+
+    res.status(200).json({ message: "Status do pedido atualizado com sucesso!", order: updatedOrder });
+  } catch (error) {
+    console.error("Erro ao atualizar status do pedido:", error);
+    res.status(500).json({ error: "Erro ao atualizar status do pedido!" });
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 
